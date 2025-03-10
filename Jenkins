@@ -6,7 +6,7 @@ pipeline {
         AWS_ACCESS_KEY_ID = credentials('aws-access-key')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
         AWS_REGION = 'us-east-1'
-        ECR_REPOSITORY = 'your-ecr-repo/aws-ci-app'
+        ECR_REPOSITORY = '***'
         IMAGE_TAG = "${env.BUILD_ID}"
     }
 
