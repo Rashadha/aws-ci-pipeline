@@ -1,0 +1,62 @@
+// Jenkinsfile for AWS CI/CD using Jenkins
+pipeline {
+    agent any
+
+    environment {
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+        AWS_REGION = 'us-east-1'
+        ECR_REPOSITORY = 'your-ecr-repo/aws-ci-app'
+        IMAGE_TAG = "${env.BUILD_ID}"
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Rashadha/block-retail.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                sh 'trivy fs .'
+            }
+        }
+
+        stage('Docker Build and Push') {
+            steps {
+                script {
+                    def image = "${ECR_REPOSITORY}:${IMAGE_TAG}"
+                    sh "docker build -t ${image} ."
+                    sh "echo $AWS_SECRET_ACCESS_KEY | docker login -u $AWS_ACCESS_KEY_ID --password-stdin ${ECR_REPOSITORY}"
+                    sh "docker push ${image}"
+                }
+            }
+        }
+
+        stage('Deploy to AWS ECS') {
+            steps {
+                script {
+                    sh '''
+                    aws ecs update-service \
+                    --cluster my-cluster \
+                    --service my-service \
+                    --force-new-deployment
+                    '''
+                }
+            }
+        }
+    }
+}
